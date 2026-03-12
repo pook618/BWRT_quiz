@@ -3,7 +3,7 @@
     let quizWindow;
 
     // REPLACE with your Pre-filled link (ending with your entry ID and =)
-    const baseFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfG99wu-Mv9ebU3rl1JvsiWB6aV36aqSF21xnaDjDAlNIacMA/viewform?usp=pp_url&entry.2060872989=LOG_GOES_HEREs";
+    const baseFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfG99wu-Mv9ebU3rl1JvsiWB6aV36aqSF21xnaDjDAlNIacMA/viewform?usp=pp_url&entry.2060872989=LOG_GOES_HERE";
 
     function launchQuiz() {
         const name = document.getElementById('studentName').value;
@@ -21,14 +21,11 @@
                 return;
             }
 
-            // DETECT WINDOW BLUR (If they leave the Quiz window)
+            // Detect if they have returned to the portal (meaning they left the quiz)
             if (document.hasFocus()) {
-                recordViolation("TAB/WINDOW SWITCH");
-                alert("⚠️ SECURITY VIOLATION: You have left the quiz window. This attempt is logged.");
-                
-                // Sync the log to the form
-                const currentLog = encodeURIComponent(activityLog.join(" | "));
-                quizWindow.location.href = baseFormUrl + currentLog;
+                recordViolation("TAB_SWITCH / OUTSIDE_CLICK");
+                alert("⚠️ SECURITY ALERT: You left the quiz window. This event is being recorded in Aaron Pook's database.");
+                syncLog();
             }
         }, 1000);
     }
@@ -38,29 +35,37 @@
         activityLog.push(`[${time}] ${type}`);
     }
 
-    // 1. BLOCK RIGHT-CLICK COMPLETELY
+    function syncLog() {
+        if (quizWindow && !quizWindow.closed) {
+            const currentLog = encodeURIComponent(activityLog.join(" | "));
+            quizWindow.location.href = baseFormUrl + currentLog;
+        }
+    }
+
+    // 1. POP-UP ALERT FOR RIGHT CLICK
     document.addEventListener('contextmenu', function(e) {
         e.preventDefault();
-        recordViolation("RIGHT-CLICK ATTEMPTED");
-        alert("Right-click is disabled for research integrity.");
+        recordViolation("RIGHT_CLICK_ATTEMPT");
+        alert("❌ PROHIBITED: Right-click is not allowed. Violation logged.");
+        syncLog();
     }, false);
 
-    // 2. BLOCK COPY/PASTE/CUT SHORTCUTS
-    document.addEventListener('keydown', function(e) {
-        // Blocks Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+U (View Source), F12 (Dev Tools)
-        if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'u' || e.key === 's') || e.keyCode === 123) {
-            e.preventDefault();
-            recordViolation("KEYBOARD SHORTCUT: " + e.key);
-            alert("This shortcut is disabled during the assessment.");
-            return false;
-        }
+    // 2. POP-UP ALERT FOR COPY (Ctrl+C)
+    document.addEventListener('copy', function(e) {
+        e.preventDefault();
+        recordViolation("COPY_ATTEMPT");
+        alert("❌ PROHIBITED: Copying content is not allowed. Violation logged.");
+        syncLog();
     });
 
-    // 3. BLOCK PRINT SCREEN
-    document.addEventListener('keyup', function(e) {
-        if (e.key === 'PrintScreen') {
-            navigator.clipboard.writeText(''); // Clear clipboard
-            alert('Screenshots are prohibited.');
+    // 3. BLOCK KEYBOARD SHORTCUTS
+    document.onkeydown = function(e) {
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'u')) {
+            e.preventDefault();
+            recordViolation("SHORTCUT_USED_" + e.key.toUpperCase());
+            alert("❌ SECURITY NOTICE: Keyboard shortcuts are disabled. Log updated.");
+            syncLog();
+            return false;
         }
-    });
+    };
 </script>
