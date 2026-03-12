@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Academic Research Portal - Harbin City</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; max-width: 500px; border-top: 6px solid #d93025; }
+        h2 { color: #202124; margin-bottom: 10px; }
+        .warning-box { background: #fff4f2; border: 1px solid #d93025; padding: 15px; border-radius: 8px; color: #d93025; font-size: 14px; margin-bottom: 20px; text-align: left; }
+        input { width: 80%; padding: 12px; margin-bottom: 20px; border: 1px solid #dadce0; border-radius: 4px; font-size: 16px; }
+        button { background: #1a73e8; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1765cc; }
+    </style>
+</head>
+<body oncontextmenu="return false" oncopy="return false" oncut="return false">
+
+<div class="card">
+    <h2>Secure Exam Environment</h2>
+    <div class="warning-box">
+        <strong>ATTENTION:</strong>
+        <ul>
+            <li>Right-click and Copy/Paste are <strong>DISABLED</strong>.</li>
+            <li>Switching tabs will trigger a <strong>SECURITY ALERT</strong>.</li>
+            <li>All violations are logged to your final submission.</li>
+        </ul>
+    </div>
+    
+    <input type="text" id="studentName" placeholder="Enter Full Name to Begin" required>
+    <br>
+    <button onclick="launchQuiz()">START ASSESSMENT</button>
+</div>
+
+<script>
+    let activityLog = [];
+    let quizWindow;
+
+    // REPLACE with your Pre-filled link (ending with your entry ID and =)
+    const baseFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfG99wu-Mv9ebU3rl1JvsiWB6aV36aqSF21xnaDjDAlNIacMA/viewform?usp=pp_url&entry.2060872989=LOG_GOES_HERE";
+
+    function launchQuiz() {
+        const name = document.getElementById('studentName').value;
+        if (!name) { alert("Please enter your name first."); return; }
+
+        activityLog.push(`[${new Date().toLocaleTimeString()}] Quiz started by ${name}`);
+        
+        // Open Quiz in a clean new window
+        quizWindow = window.open(baseFormUrl, 'QuizWindow', 'width=1100,height=850,menubar=no,toolbar=no,location=no');
+
+        // Monitoring Loop
+        const monitor = setInterval(() => {
+            if (!quizWindow || quizWindow.closed) {
+                clearInterval(monitor);
+                return;
+            }
+
+            // DETECT IF STUDENT CLICKS AWAY FROM QUIZ
+            // If the main Portal tab gets focus, it means they left the Quiz tab.
+            if (document.hasFocus()) {
+                recordViolation("TAB/WINDOW SWITCH DETECTED");
+                alert("⚠️ SECURITY WARNING: You have left the quiz window. This has been logged.");
+                
+                // Update the Quiz URL with the new log data
+                const currentLog = encodeURIComponent(activityLog.join(" | "));
+                quizWindow.location.href = baseFormUrl + currentLog;
+            }
+        }, 1000);
+    }
+
+    function recordViolation(type) {
+        let time = new Date().toLocaleTimeString();
+        activityLog.push(`[${time}] ${type}`);
+        console.warn("Violation logged: " + type);
+    }
+
+    // Block Keyboard Shortcuts (Ctrl+C, Ctrl+V, Ctrl+U, F12)
+    document.onkeydown = function(e) {
+        if (e.ctrlKey && (e.keyCode === 67 || e.keyCode === 86 || e.keyCode === 85 || e.keyCode === 73)) {
+            recordViolation("SHORTCUT ATTEMPTED (Ctrl+C/V/U)");
+            alert("Copying and inspecting are disabled.");
+            return false;
+        }
+    };
+</script>
+
+</body>
+</html>
